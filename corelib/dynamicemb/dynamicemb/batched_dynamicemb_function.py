@@ -16,8 +16,20 @@
 from typing import List
 
 import torch
-from dynamicemb.dynamicemb_config import DynamicEmbPoolingMode, dyn_emb_to_torch
+from dynamicemb.dynamicemb_config import (
+    DynamicEmbInitializerArgs,
+    DynamicEmbPoolingMode,
+    dyn_emb_to_torch,
+)
+from dynamicemb.initializer import BaseDynamicEmbInitializer
+from dynamicemb.key_value_table import (
+    Cache,
+    KeyValueTableCachingFunction,
+    KeyValueTableFunction,
+    Storage,
+)
 from dynamicemb.optimizer import BaseDynamicEmbeddingOptimizer
+from dynamicemb.types import Counter
 from dynamicemb.unique_op import UniqueOp
 from dynamicemb_extensions import (
     DynamicEmbTable,
