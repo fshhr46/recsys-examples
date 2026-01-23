@@ -33,6 +33,7 @@ from dynamicemb.optimizer import (
     string_to_opt_type,
 )
 from dynamicemb_extensions import OptimizerType
+from dynamicemb import DynamicEmbInitializerArgs
 from fbgemm_gpu.split_table_batched_embeddings_ops_training import PoolingMode
 from torch import nn
 from torchrec.distributed.batched_embedding_kernel import (
@@ -240,6 +241,14 @@ def _clean_grouped_fused_params(fused_params: Dict[str, Any]):
         dyn_emb_opt_type = string_to_opt_type(fused_params["optimizer"].value)
         fused_params["optimizer"] = dyn_emb_opt_type
 
+def _fix_dynamicemb_options(dynamicemb_options: Any) -> DynamicEmbTableOptions:
+    if not isinstance(dynamicemb_options, DynamicEmbTableOptions):
+        dynamicemb_options = DynamicEmbTableOptions(**dynamicemb_options)
+    if not isinstance(dynamicemb_options.initializer_args, DynamicEmbInitializerArgs):
+        dynamicemb_options.initializer_args = DynamicEmbInitializerArgs(**dynamicemb_options.initializer_args)
+    if not isinstance(dynamicemb_options.eval_initializer_args, DynamicEmbInitializerArgs):
+        dynamicemb_options.eval_initializer_args = DynamicEmbInitializerArgs(**dynamicemb_options.eval_initializer_args)
+    return dynamicemb_options
 
 def _get_dynamicemb_options_per_table(
     local_row,
@@ -250,6 +259,7 @@ def _get_dynamicemb_options_per_table(
 ) -> DynamicEmbTableOptions:
     # User-configured
     dynamicemb_options = table.fused_params["dynamicemb_options"]
+    dynamicemb_options = _fix_dynamicemb_options(dynamicemb_options)
 
     # Internal-configured
     if dynamicemb_options.index_type is None:
