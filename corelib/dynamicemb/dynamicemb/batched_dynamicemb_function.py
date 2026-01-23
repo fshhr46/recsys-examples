@@ -385,6 +385,10 @@ class DynamicEmbeddingFunction(torch.autograd.Function):
             reverse_idx = ctx.reverse_idx
             unique_idx_forback = ctx.unique_idx_forback
 
+        # clip the gradient before reduction
+        if optimizer.need_gradient_clipping():
+            optimizer.clip_gradient(grads)
+
         table_num = len(tables)
         unique_indices_list = []
         unique_grads_list = []
