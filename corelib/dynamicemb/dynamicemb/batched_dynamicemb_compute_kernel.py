@@ -20,7 +20,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 import torch
 import torch.distributed as dist
 from dynamicemb.batched_dynamicemb_tables import BatchedDynamicEmbeddingTables
-from dynamicemb.dynamicemb_config import DEFAULT_INDEX_TYPE, DynamicEmbPoolingMode
+from dynamicemb.dynamicemb_config import DEFAULT_INDEX_TYPE, DynamicEmbPoolingMode, DynamicEmbTableOptions, DynamicEmbInitializerArgs
 from dynamicemb.optimizer import string_to_opt_type
 from fbgemm_gpu.split_table_batched_embeddings_ops_training import PoolingMode
 from torch import nn
@@ -229,6 +229,13 @@ def _clean_grouped_fused_params(fused_params: Dict[str, Any]):
         dyn_emb_opt_type = string_to_opt_type(fused_params["optimizer"].value)
         fused_params["optimizer"] = dyn_emb_opt_type
 
+def _fix_dynamicemb_options(dynamicemb_options: Any) -> DynamicEmbTableOptions:
+    if not isinstance(dynamicemb_options, DynamicEmbTableOptions):
+        dynamicemb_options = DynamicEmbTableOptions(**dynamicemb_options)
+    if not isinstance(dynamicemb_options.initializer_args, DynamicEmbInitializerArgs):
+        dynamicemb_options.initializer_args = DynamicEmbInitializerArgs(**dynamicemb_options.initializer_args)
+    if not isinstance(dynamicemb_options.eval_initializer_args, DynamicEmbInitializerArgs):
+        dynamicemb_options.eval_initializer_args = DynamicEmbInitializerArgs(**dynamicemb_options.eval_initializer_args)
 
 class BatchedDynamicEmbeddingBag(
     BaseBatchedEmbeddingBag[torch.Tensor],  # FusedOptimizerModule
@@ -255,6 +262,7 @@ class BatchedDynamicEmbeddingBag(
             self._local_rows, self._local_cols, config.embedding_tables
         ):
             dynamicemb_options = table.fused_params["dynamicemb_options"]
+            dynamicemb_options = _fix_dynamicemb_options(dynamicemb_options)
             dynamicemb_options.dim = local_col
             dynamicemb_options.max_capacity = local_row
             if dynamicemb_options.index_type is None:
@@ -373,6 +381,7 @@ class BatchedDynamicEmbedding(BaseBatchedEmbedding[torch.Tensor]):
             self._local_rows, self._local_cols, config.embedding_tables
         ):
             dynamicemb_options = table.fused_params["dynamicemb_options"]
+            dynamicemb_options = _fix_dynamicemb_options(dynamicemb_options)
             dynamicemb_options.dim = local_col
             dynamicemb_options.max_capacity = local_row
             if dynamicemb_options.index_type is None:
